@@ -1,37 +1,31 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-
-    <meta charset="UTF-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>HidrataMamãe</title>
   <link rel="stylesheet" href="style.css" />
-    <link rel="icon" type="image/png" href="./icon.png">
 </head>
 <body>
   <div class="container">
     <h1>HidrataMamãe 💧</h1>
+    <label for="peso">Peso da mamãe (kg):</label>
+    <input type="number" id="peso" />
+    <button id="calcular">Calcular meta</button>
+    <p id="resultado"></p>
 
-    <div class="input-group">
-      <label for="peso">Digite o peso (kg):</label>
-      <input type="number" id="peso" placeholder="Ex: 70" />
-      <button onclick="calcularMeta()">Calcular</button>
+    <div class="botoes">
+      <button id="registrar">Registrar Consumo</button>
+      <button id="fechar-dia">Fechar Dia</button>
     </div>
 
-    <div id="resultado" class="hidden">
-      <p>Meta diária: <strong id="metaAgua"></strong></p>
-      <p>Você já bebeu: <strong id="consumoAtual"></strong> (<span id="porcentagem"></span>%)</p>
-
-      <div class="botoes">
-        <button onclick="adicionarAgua(250)">+ 250ml</button>
-        <button onclick="adicionarAgua(500)">+ 500ml</button>
-        <button onclick="resetarConsumo()">Resetar</button>
-      </div>
-
-      <button id="notificar" onclick="ativarNotificacoes()">🔔 Ativar lembretes</button>
+    <div class="barra-container">
+      <div id="progresso">0%</div>
     </div>
+
+    <h2>Calendário</h2>
+    <div id="calendario" class="calendario"></div>
   </div>
-
   <script src="script.js"></script>
 </body>
 </html>
