@@ -1,107 +1,143 @@
+// script.js
+
 const pesoInput = document.getElementById("peso");
-const calcularBtn = document.getElementById("calcular");
-const resultado = document.getElementById("resultado");
-const progresso = document.getElementById("progresso");
+const metaDisplay = document.getElementById("meta");
+const consumoInput = document.getElementById("consumo");
+const progressoDisplay = document.getElementById("progresso");
 const registrarBtn = document.getElementById("registrar");
 const fecharDiaBtn = document.getElementById("fechar-dia");
+const calendarioDiv = document.getElementById("calendario");
+const mesDisplay = document.getElementById("mesAtual");
+const mesAnteriorBtn = document.getElementById("mesAnterior");
+const mesProximoBtn = document.getElementById("mesProximo");
 
-const historico = JSON.parse(localStorage.getItem("historicoHidrataMamae")) || {};
-const dataAtual = new Date().toISOString().split("T")[0];
+let hoje = new Date();
+let anoAtual = hoje.getFullYear();
+let mesAtual = hoje.getMonth();
+let diaAtual = hoje.getDate();
 
-registrarBtn.addEventListener("click", () => {
-  const valor = parseFloat(prompt("Quantos ml de água você tomou agora?"));
-  if (!isNaN(valor)) {
-    let total = parseFloat(localStorage.getItem("consumoHoje")) || 0;
-    total += valor;
-    localStorage.setItem("consumoHoje", total.toString());
-    atualizarProgresso();
-  }
-});
+function calcularMeta(peso) {
+  return peso * 35;
+}
 
-calcularBtn.addEventListener("click", () => {
+function atualizarMeta() {
   const peso = parseFloat(pesoInput.value);
   if (!isNaN(peso)) {
-    const agua = peso * 35;
-    resultado.textContent = `Você deve tomar cerca de ${agua.toFixed(0)} ml de água por dia.`;
+    const meta = calcularMeta(peso);
+    metaDisplay.textContent = meta.toFixed(0);
     localStorage.setItem("peso", peso);
-    localStorage.setItem("metaDiaria", agua);
+    localStorage.setItem("metaDiaria", meta);
     atualizarProgresso();
-    renderizarCalendario();
   }
-});
+}
 
-fecharDiaBtn.addEventListener("click", () => {
-  const meta = parseFloat(localStorage.getItem("metaDiaria")) || 0;
-  const consumo = parseFloat(localStorage.getItem("consumoHoje")) || 0;
-  if (meta > 0) {
-    const percentual = (consumo / meta) * 100;
-    historico[dataAtual] = percentual;
-    localStorage.setItem("historicoHidrataMamae", JSON.stringify(historico));
-    localStorage.setItem("consumoHoje", "0");
-    atualizarProgresso();
-    renderizarCalendario();
-    alert(`Dia fechado! Você atingiu ${percentual.toFixed(1)}% da meta.`);
-  } else {
-    alert("Defina o peso primeiro para calcular a meta.");
-  }
-});
+function obterHistorico(mes, ano) {
+  const chave = `historico-${ano}-${mes}`;
+  const historico = JSON.parse(localStorage.getItem(chave));
+  return historico || {};
+}
+
+function salvarHistorico(mes, ano, historico) {
+  const chave = `historico-${ano}-${mes}`;
+  localStorage.setItem(chave, JSON.stringify(historico));
+}
 
 function atualizarProgresso() {
+  const consumo = parseFloat(consumoInput.value) || 0;
   const meta = parseFloat(localStorage.getItem("metaDiaria")) || 0;
-  const atual = parseFloat(localStorage.getItem("consumoHoje")) || 0;
   if (meta > 0) {
-    const porcentagem = Math.min((atual / meta) * 100, 100);
-    progresso.style.width = `${porcentagem}%`;
-    progresso.textContent = `${porcentagem.toFixed(0)}%`;
+    const porcentagem = (consumo / meta) * 100;
+    progressoDisplay.textContent = `${porcentagem.toFixed(0)}%`;
   } else {
-    progresso.style.width = "0%";
-    progresso.textContent = "0%";
+    progressoDisplay.textContent = "0%";
   }
 }
 
-function renderizarCalendario() {
-  const calendario = document.getElementById("calendario");
-  calendario.innerHTML = "";
+function fecharDia() {
+  const consumo = parseFloat(consumoInput.value) || 0;
+  const meta = parseFloat(localStorage.getItem("metaDiaria")) || 0;
+  const porcentagem = meta > 0 ? (consumo / meta) * 100 : 0;
 
-  const hoje = new Date();
-  const ano = hoje.getFullYear();
-  const mes = hoje.getMonth();
-  const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+  const historico = obterHistorico(mesAtual, anoAtual);
+  historico[diaAtual] = porcentagem;
+  salvarHistorico(mesAtual, anoAtual, historico);
+  consumoInput.value = "";
+  atualizarProgresso();
+  gerarCalendario(mesAtual, anoAtual);
+}
 
-  for (let dia = 1; dia <= diasNoMes; dia++) {
-    const data = new Date(ano, mes, dia).toISOString().split("T")[0];
-    const valor = historico[data] ?? null;
+function gerarCalendario(mes, ano) {
+  calendarioDiv.innerHTML = "";
+  mesDisplay.textContent = new Date(ano, mes).toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
 
+  const diasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
+  diasSemana.forEach(dia => {
+    const div = document.createElement("div");
+    div.textContent = dia;
+    div.className = "dia semana";
+    calendarioDiv.appendChild(div);
+  });
+
+  const primeiroDia = new Date(ano, mes, 1).getDay();
+  const totalDias = new Date(ano, mes + 1, 0).getDate();
+  const historico = obterHistorico(mes, ano);
+
+  for (let i = 0; i < primeiroDia; i++) {
+    const div = document.createElement("div");
+    div.className = "dia vazio";
+    calendarioDiv.appendChild(div);
+  }
+
+  for (let dia = 1; dia <= totalDias; dia++) {
     const div = document.createElement("div");
     div.className = "dia";
-    div.textContent = dia;
-
-    if (valor === null) {
-      div.title = `${dia} - Sem registro`;
-      div.style.backgroundColor = "#ffffff"; // branco
+    const valor = historico[dia];
+    if (valor === undefined) {
+      div.style.backgroundColor = "white";
+    } else if (valor >= 100) {
+      div.style.backgroundColor = "green";
+    } else if (valor >= 33) {
+      div.style.backgroundColor = "yellow";
     } else {
-      div.title = `${dia} - ${valor.toFixed(0)}% da meta`;
-
-      if (valor >= 100) {
-        div.style.backgroundColor = "#4caf50"; // verde
-      } else if (valor >= 33 && valor <= 66) {
-        div.style.backgroundColor = "#ffeb3b"; // amarelo
-      } else {
-        div.style.backgroundColor = "#f44336"; // vermelho
-      }
+      div.style.backgroundColor = "red";
     }
-
-    calendario.appendChild(div);
+    div.textContent = dia;
+    div.title = `${dia} - ${valor !== undefined ? valor.toFixed(0) + "%" : "Sem dados"}`;
+    calendarioDiv.appendChild(div);
   }
+
+  fecharDiaBtn.disabled = mes !== hoje.getMonth() || ano !== hoje.getFullYear();
 }
 
-// Inicialização
-window.onload = () => {
+pesoInput.addEventListener("input", atualizarMeta);
+consumoInput.addEventListener("input", atualizarProgresso);
+registrarBtn.addEventListener("click", atualizarProgresso);
+fecharDiaBtn.addEventListener("click", fecharDia);
+mesAnteriorBtn.addEventListener("click", () => {
+  mesAtual--;
+  if (mesAtual < 0) {
+    mesAtual = 11;
+    anoAtual--;
+  }
+  gerarCalendario(mesAtual, anoAtual);
+});
+mesProximoBtn.addEventListener("click", () => {
+  mesAtual++;
+  if (mesAtual > 11) {
+    mesAtual = 0;
+    anoAtual++;
+  }
+  gerarCalendario(mesAtual, anoAtual);
+});
+
+document.addEventListener("DOMContentLoaded", () => {
   const peso = localStorage.getItem("peso");
   if (peso) {
     pesoInput.value = peso;
-    calcularBtn.click();
+    atualizarMeta();
   }
-  atualizarProgresso();
-  renderizarCalendario();
-};
+  gerarCalendario(mesAtual, anoAtual);
+});
