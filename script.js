@@ -57,7 +57,6 @@ registrarBtn.addEventListener("click", () => {
   if (!isNaN(valor) && valor > 0) {
     consumoAtual += valor;
     consumoInput.value = "";
-    alert(`Consumo registrado! Total do dia: ${consumoAtual.toFixed(0)} mL`);
     atualizarProgresso();
   }
 });
@@ -126,9 +125,29 @@ function gerarCalendario(mes, ano) {
 }
 
 pesoInput.addEventListener("input", atualizarMeta);
-consumoInput.addEventListener("input", atualizarProgresso);
-registrarBtn.addEventListener("click", () => {}); // já tratado acima
-fecharDiaBtn.addEventListener("click", () => {}); // já tratado acima
+// Removido event listener direto no input consumoInput para evitar soma automática
+registrarBtn.addEventListener("click", () => {
+  const valor = parseFloat(consumoInput.value);
+  if (!isNaN(valor) && valor > 0) {
+    consumoAtual += valor;
+    consumoInput.value = "";
+    atualizarProgresso();
+  }
+});
+fecharDiaBtn.addEventListener("click", () => {
+  const meta = parseFloat(localStorage.getItem("metaDiaria")) || 0;
+  const porcentagem = meta > 0 ? (consumoAtual / meta) * 100 : 0;
+
+  const historico = obterHistorico(mesAtual, anoAtual);
+  historico[diaAtual] = porcentagem;
+  salvarHistorico(mesAtual, anoAtual, historico);
+
+  consumoAtual = 0;
+  consumoInput.value = "";
+  atualizarProgresso();
+  gerarCalendario(mesAtual, anoAtual);
+});
+
 mesAnteriorBtn.addEventListener("click", () => {
   mesAtual--;
   if (mesAtual < 0) {
